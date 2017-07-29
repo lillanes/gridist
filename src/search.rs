@@ -1,4 +1,4 @@
-use grid::{Distance, Grid, Measure, Point};
+use grid::{Distance, Grid, Measure, Point, Tile};
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -38,50 +38,82 @@ impl Ord for Node {
     }
 }
 
-pub fn astar<H, D>(grid: &mut Grid,
-                   source: Point,
-                   target: Point,
-                   heuristic: H,
-                   cost: D)
-                   -> bool
+pub type Path = Vec<Point>;
+
+fn extract_path(grid: &Grid, end: Point) -> Path {
+    let mut path = Path::new();
+
+    let mut point = end;
+    loop {
+        let cell = &grid[&point];
+
+        if let Some(previous) = cell.parent() {
+            path.push(point);
+            point = previous;
+        } else {
+            break;
+        }
+    }
+
+    path
+}
+
+pub fn astar<H, D, P>(grid: &mut Grid,
+                      source: &Point,
+                      target: &Point,
+                      heuristic: H,
+                      cost: D,
+                      passable: P)
+                      -> Option<Path>
     where H: Fn(&Point, &Point) -> Distance,
-          D: Fn(&Point, &Point) -> Distance
+          D: Fn(&Point, &Point) -> Distance,
+          P: Fn(&Tile) -> bool
 {
     grid.reset();
 
+    for row in grid.iter() {
+        println!();
+        for cell in row.iter() {
+            let v = if cell.visited() { "x" } else { "o" };
+            print!("{}", v);
+        }
+    }
+
     let mut open = BinaryHeap::new();
 
-    grid[&source].visit(0.0, Distance::octile(&source, &target));
+    grid[source].visit_initial(Distance::octile(source, target));
     open.push(Node {
-                  point: source,
-                  f: grid[&source].f(),
+                  point: *source,
+                  f: grid[source].f(),
               });
 
     while let Some(expand) = open.pop() {
         let point = expand.point();
-        if *point == target {
-            return true;
+        if point == target {
+            return Some(extract_path(grid, *point));
         } else {
+            let g = grid[point].g();
             for neighbor in point.neighbors().iter() {
-                let tile = &mut grid[neighbor];
-                if !tile.visited() {
-                    let g = tile.g() + cost(point, neighbor);
-                    let h = heuristic(neighbor, &target);
-                    tile.visit(g, h);
-                    open.push(Node {
-                                  point: *neighbor,
-                                  f: g + h,
-                              });
+                if let Some(ref mut tile) = grid.get_mut(neighbor) {
+                    if !tile.visited() && passable(tile) {
+                        let h = heuristic(neighbor, target);
+                        tile.visit(*point, g + cost(point, neighbor), h);
+                        open.push(Node {
+                                      point: *neighbor,
+                                      f: tile.f(),
+                                  });
+                    }
                 }
             }
         }
     }
-    return false;
+    return None;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use parser::grid_from_str;
 
     #[test]
@@ -95,15 +127,22 @@ map
 .TT.
 ....");
 
-        assert!(astar(&mut grid,
-                      Point::new(0, 0),
-                      Point::new(0, 0),
-                      Distance::octile,
-                      Distance::euclidean));
-        assert!(astar(&mut grid,
-                      Point::new(0, 0),
-                      Point::new(3, 3),
-                      Distance::octile,
-                      Distance::euclidean));
+        let path = astar(&mut grid,
+                         &Point::new(0, 0),
+                         &Point::new(0, 0),
+                         Distance::octile,
+                         Distance::euclidean,
+                         Tile::passable).unwrap();
+
+        assert_eq!(path.len(), 0);
+
+        let path = astar(&mut grid,
+                         &Point::new(0, 0),
+                         &Point::new(3, 3),
+                         Distance::octile,
+                         Distance::euclidean,
+                         Tile::passable).unwrap();
+
+        assert_eq!(path.len(), 5);
     }
 }

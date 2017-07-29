@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 use std::f64::consts::SQRT_2;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::ops::{Index, IndexMut};
+use std::slice::Iter;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Point {
@@ -89,11 +90,8 @@ pub enum Terrain {
 }
 
 impl Terrain {
-    fn passable(&self) -> Belief {
-        match *self {
-            Terrain::Ground => Belief::Passable,
-            _ => Belief::Impassable,
-        }
+    fn passable(&self) -> bool {
+        *self == Terrain::Ground
     }
 }
 
@@ -130,6 +128,7 @@ impl Display for Belief {
 pub struct Tile {
     terrain: Terrain,
     belief: Belief,
+    parent: Option<Point>,
     g: Distance,
     h: Distance,
     visited: bool,
@@ -140,6 +139,7 @@ impl Tile {
         Tile {
             terrain: terrain,
             belief: Belief::Unknown,
+            parent: None,
             g: 0.0,
             h: 0.0,
             visited: false,
@@ -148,12 +148,24 @@ impl Tile {
 
     pub fn look(&mut self) {
         if self.belief == Belief::Unknown {
-            self.belief = self.terrain.passable();
+            if self.terrain.passable() {
+                self.belief = Belief::Passable;
+            } else {
+                self.belief = Belief::Impassable;
+            }
         }
     }
 
     pub fn passable(&self) -> bool {
+        self.terrain.passable()
+    }
+
+    pub fn freespace(&self) -> bool {
         self.belief != Belief::Impassable
+    }
+
+    pub fn parent(&self) -> Option<Point> {
+        self.parent
     }
 
     pub fn f(&self) -> Distance {
@@ -168,9 +180,17 @@ impl Tile {
         self.visited
     }
 
-    pub fn visit(&mut self, g: Distance, h: Distance) {
+    pub fn visit(&mut self, parent: Point, g: Distance, h: Distance) {
+        self.parent = Some(parent);
         self.visited = true;
         self.g = g;
+        self.h = h;
+    }
+
+    pub fn visit_initial(&mut self, h: Distance) {
+        self.parent = None;
+        self.visited = true;
+        self.g = 0.0;
         self.h = h;
     }
 
@@ -206,9 +226,23 @@ impl Grid {
     }
 
     pub fn reset(&mut self) {
-        self.tiles.iter_mut().map(|row| {
-                                      row.iter_mut().map(|tile| tile.reset())
-                                  });
+        for row in self.tiles.iter_mut() {
+            for cell in row.iter_mut() {
+                cell.reset();
+            }
+        }
+    }
+
+    pub fn look(&mut self, point: &Point) {
+        for neighbor in point.neighbors().iter() {
+            if let Some(ref mut tile) = self.get_mut(neighbor) {
+                tile.look();
+            }
+        }
+    }
+
+    pub fn iter(&self) -> Iter<Vec<Tile>> {
+        self.tiles.iter()
     }
 }
 
