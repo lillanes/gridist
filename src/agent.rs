@@ -5,31 +5,31 @@ use search::{astar, Path};
 pub struct Data {
     pub cost: Distance,
     pub steps: usize,
-    pub stages: usize,
+    pub episodes: usize,
     pub expansions: usize,
 }
 
 #[derive(Debug)]
-pub struct Agent<'a, S> {
-    data: Data,
-    location: Point,
+pub struct Experiment<'a, A> {
     grid: &'a mut Grid,
-    strategy: S,
+    agent: A,
+    location: Point,
+    data: Data,
 }
 
-impl<'a, S> Agent<'a, S>
-    where S: AgentStrategy
+impl<'a, A> Experiment<'a, A>
+    where A: Agent
 {
-    pub fn new(grid: &'a mut Grid, strategy: S) -> Agent<'a, S> {
-        Agent {
-            data: Data::default(),
-            location: Point::new(0, 0),
+    pub fn new(grid: &'a mut Grid, agent: A) -> Experiment<'a, A> {
+        Experiment {
             grid: grid,
-            strategy: strategy,
+            agent: agent,
+            location: Point::new(0, 0),
+            data: Data::default(),
         }
     }
 
-    fn move_to(&mut self, point: Point) {
+    fn move_agent(&mut self, point: Point) {
         self.location = point;
         self.grid.look(&self.location);
         println!("moved to {}", point);
@@ -48,14 +48,15 @@ impl<'a, S> Agent<'a, S>
         }
     }
 
-    pub fn solve(&mut self, source: Point, target: Point) -> bool {
+    pub fn run(&mut self, source: Point, target: Point) -> bool {
+        self.agent.reset();
         self.location = source;
         self.grid.look(&self.location);
 
-        while let Some(point) = self.strategy.act(self.grid,
-                                                  &self.location,
-                                                  &target) {
-            self.move_to(point);
+        while let Some(point) = self.agent.act(self.grid,
+                                               &self.location,
+                                               &target) {
+            self.move_agent(point);
             if point == target {
                 return true;
             }
@@ -64,12 +65,14 @@ impl<'a, S> Agent<'a, S>
     }
 }
 
-trait AgentStrategy {
+trait Agent {
     fn act(&mut self,
            grid: &mut Grid,
            location: &Point,
            target: &Point)
            -> Option<Point>;
+
+    fn reset(&mut self) {}
 }
 
 struct AlwaysAstar<H, C> {
@@ -86,7 +89,7 @@ impl<H, C> AlwaysAstar<H, C> {
     }
 }
 
-impl<H, C> AgentStrategy for AlwaysAstar<H, C>
+impl<H, C> Agent for AlwaysAstar<H, C>
     where H: Fn(&Point, &Point) -> Distance,
           C: Fn(&Point, &Point) -> Distance
 {
@@ -108,7 +111,7 @@ impl<H, C> AgentStrategy for AlwaysAstar<H, C>
 struct RepeatedAstar<H, C> {
     heuristic: H,
     cost: C,
-    path: Path,
+    path: Option<Path>,
 }
 
 impl<H, C> RepeatedAstar<H, C>
@@ -119,21 +122,28 @@ impl<H, C> RepeatedAstar<H, C>
         RepeatedAstar {
             heuristic: heuristic,
             cost: cost,
-            path: Path::new(),
+            path: None,
         }
     }
 
-    fn update_path(&mut self, grid: &mut Grid, location: &Point, target: &Point) {
+    fn update_path(&mut self,
+                   grid: &mut Grid,
+                   location: &Point,
+                   target: &Point) {
         self.path = astar(grid,
                           location,
                           target,
                           &self.heuristic,
                           &self.cost,
-                          Tile::freespace).unwrap_or(Path::new());
+                          Tile::freespace);
+    }
+
+    fn follow_path(&mut self) -> Option<Point> {
+        self.path.as_mut().and_then(|path| path.pop())
     }
 }
 
-impl<H, C> AgentStrategy for RepeatedAstar<H, C>
+impl<H, C> Agent for RepeatedAstar<H, C>
     where H: Fn(&Point, &Point) -> Distance,
           C: Fn(&Point, &Point) -> Distance
 {
@@ -142,14 +152,18 @@ impl<H, C> AgentStrategy for RepeatedAstar<H, C>
            location: &Point,
            target: &Point)
            -> Option<Point> {
-        if let Some(next) = self.path.pop() {
+        if let Some(next) = self.follow_path() {
             if grid[&next].freespace() {
                 return Some(next);
             }
         }
 
         self.update_path(grid, location, target);
-        self.path.pop()
+        self.follow_path()
+    }
+
+    fn reset(&mut self) {
+        self.path = None;
     }
 }
 
@@ -174,10 +188,10 @@ map
         let start = Point::new(0, 0);
         let goal = Point::new(3, 3);
 
-        let strategy = AlwaysAstar::new(Distance::octile, Distance::euclidean);
-        let mut agent = Agent::new(&mut grid, strategy);
+        let agent = AlwaysAstar::new(Distance::octile, Distance::euclidean);
+        let mut experiment = Experiment::new(&mut grid, agent);
 
-        assert!(agent.solve(start, goal));
+        assert!(experiment.run(start, goal));
     }
 
     #[test]
@@ -194,12 +208,10 @@ map
         let start = Point::new(0, 0);
         let goal = Point::new(3, 3);
 
-        let strategy = RepeatedAstar::new(Distance::octile,
-                                          Distance::euclidean);
-        let mut agent = Agent::new(&mut grid, strategy);
+        let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
+        let mut experiment = Experiment::new(&mut grid, agent);
 
-        assert!(agent.solve(start, goal));
+        assert!(experiment.run(start, goal));
 
     }
-
 }

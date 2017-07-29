@@ -194,8 +194,12 @@ impl Tile {
         self.h = h;
     }
 
-    pub fn reset(&mut self) {
+    pub fn unvisit(&mut self) {
         self.visited = false;
+    }
+
+    pub fn forget(&mut self) {
+        self.belief = Belief::Unknown;
     }
 }
 
@@ -212,9 +216,7 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(tiles: Vec<Vec<Tile>>) -> Grid {
-        Grid {
-            tiles: tiles,
-        }
+        Grid { tiles: tiles }
     }
 
     pub fn get(&self, point: &Point) -> Option<&Tile> {
@@ -225,10 +227,12 @@ impl Grid {
         self.tiles.get_mut(point.y()).and_then(|row| row.get_mut(point.x()))
     }
 
-    pub fn reset(&mut self) {
+    /// Marks all cells as unvisited (i.e. not Open or Closed). Must be called
+    /// before every search episode.
+    pub fn restage(&mut self) {
         for row in self.tiles.iter_mut() {
             for cell in row.iter_mut() {
-                cell.reset();
+                cell.unvisit();
             }
         }
     }

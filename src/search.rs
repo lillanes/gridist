@@ -69,7 +69,7 @@ pub fn astar<H, D, P>(grid: &mut Grid,
           D: Fn(&Point, &Point) -> Distance,
           P: Fn(&Tile) -> bool
 {
-    grid.reset();
+    grid.restage();
 
     for row in grid.iter() {
         println!();
@@ -132,7 +132,8 @@ map
                          &Point::new(0, 0),
                          Distance::octile,
                          Distance::euclidean,
-                         Tile::passable).unwrap();
+                         Tile::passable)
+                .unwrap();
 
         assert_eq!(path.len(), 0);
 
@@ -141,7 +142,8 @@ map
                          &Point::new(3, 3),
                          Distance::octile,
                          Distance::euclidean,
-                         Tile::passable).unwrap();
+                         Tile::passable)
+                .unwrap();
 
         assert_eq!(path.len(), 5);
     }
