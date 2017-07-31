@@ -34,23 +34,20 @@ impl Verbosity {
 }
 
 #[derive(Debug)]
-pub struct Instance<'a, A, C> {
+pub struct Instance<'a, A> {
     grid: &'a mut Grid,
-    cost: C,
     agent: A,
     location: Point,
     data: Data,
     verbosity: Verbosity,
 }
 
-impl<'a, A, C> Instance<'a, A, C>
-    where A: Agent,
-          C: Fn(&Point, &Point) -> Distance
+impl<'a, A> Instance<'a, A>
+    where A: Agent
 {
-    pub fn new(grid: &'a mut Grid, agent: A, cost: C) -> Instance<'a, A, C> {
+    pub fn new(grid: &'a mut Grid, agent: A) -> Instance<'a, A> {
         Instance {
             grid: grid,
-            cost: cost,
             agent: agent,
             location: Point::new(0, 0),
             data: Data::default(),
@@ -64,7 +61,7 @@ impl<'a, A, C> Instance<'a, A, C>
 
     fn move_agent(&mut self, point: Point) {
         self.data.steps += 1;
-        self.data.cost += (self.cost)(&self.location, &point);
+        self.data.cost += self.agent.cost(&self.location, &point);
         self.location = point;
         self.grid.look(&self.location);
     }
@@ -192,8 +189,7 @@ map
         let goal = Point::new(3, 3);
 
         let agent = AlwaysAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance =
-            Instance::new(&mut grid, agent, Distance::euclidean);
+        let mut instance = Instance::new(&mut grid, agent);
 
         let results = instance.run_once(start, goal).unwrap();
 
@@ -217,8 +213,7 @@ map
         let goal = Point::new(3, 3);
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance =
-            Instance::new(&mut grid, agent, Distance::euclidean);
+        let mut instance = Instance::new(&mut grid, agent);
 
         let results = instance.run_once(start, goal).unwrap();
 
@@ -239,8 +234,7 @@ map
 ....");
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance =
-            Instance::new(&mut grid, agent, Distance::euclidean);
+        let mut instance = Instance::new(&mut grid, agent);
         instance.set_verbosity(Verbosity::Two);
 
         let results = instance.run_trials(98, 100, 0);

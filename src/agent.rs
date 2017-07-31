@@ -14,6 +14,8 @@ pub trait Agent {
            target: &Point)
            -> Option<Datum>;
 
+    fn cost(&self, source: &Point, target: &Point) -> Distance;
+
     fn reset(&mut self) {}
 }
 
@@ -55,6 +57,10 @@ impl<H, C> Agent for AlwaysAstar<H, C>
                                             }
                                         })
                 })
+    }
+
+    fn cost(&self, source: &Point, target: &Point) -> Distance {
+        (self.cost)(source, target)
     }
 }
 
@@ -124,6 +130,10 @@ impl<H, C> Agent for RepeatedAstar<H, C>
                                        expansions: expansions,
                                    }
                                })
+    }
+
+    fn cost(&self, source: &Point, target: &Point) -> Distance {
+        (self.cost)(source, target)
     }
 
     fn reset(&mut self) {
