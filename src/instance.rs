@@ -1,6 +1,5 @@
 use agent::Agent;
-use grid::{Distance, Grid, Point, Tile};
-use search::{astar, Path};
+use grid::{Distance, Grid, Point};
 
 use std::mem::replace;
 
@@ -15,7 +14,7 @@ pub struct Data {
     pub expansions: usize,
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Verbosity {
     Zero,
     One,
@@ -45,13 +44,16 @@ pub struct Instance<'a, A> {
 impl<'a, A> Instance<'a, A>
     where A: Agent
 {
-    pub fn new(grid: &'a mut Grid, agent: A) -> Instance<'a, A> {
+    pub fn new(grid: &'a mut Grid,
+               agent: A,
+               verbosity: Verbosity)
+               -> Instance<'a, A> {
         Instance {
             grid: grid,
             agent: agent,
             location: Point::new(0, 0),
             data: Data::default(),
-            verbosity: Verbosity::One,
+            verbosity: verbosity,
         }
     }
 
@@ -189,7 +191,7 @@ map
         let goal = Point::new(3, 3);
 
         let agent = AlwaysAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance = Instance::new(&mut grid, agent);
+        let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_once(start, goal).unwrap();
 
@@ -213,7 +215,7 @@ map
         let goal = Point::new(3, 3);
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance = Instance::new(&mut grid, agent);
+        let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_once(start, goal).unwrap();
 
@@ -234,7 +236,7 @@ map
 ....");
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut instance = Instance::new(&mut grid, agent);
+        let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
         instance.set_verbosity(Verbosity::Two);
 
         let results = instance.run_trials(98, 100, 0);
