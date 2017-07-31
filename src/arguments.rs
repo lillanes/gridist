@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn run_experiment() {
-        let argv = vec!["gridist", "tests/Mini.map", "2", "--seed=10"];
+        let argv = vec!["gridist", "maps/Mini.map", "2", "--seed=10"];
         let args: Args = Docopt::new(USAGE)
             .and_then(|d| d.argv(argv.into_iter()).deserialize())
             .unwrap();
