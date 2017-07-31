@@ -12,6 +12,8 @@ mod instance;
 mod parser;
 mod search;
 
+use arguments::run_experiment_from_cli;
+
 fn main() {
-    unimplemented!();
+    run_experiment_from_cli();
 }
