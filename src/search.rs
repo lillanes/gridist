@@ -58,28 +58,26 @@ fn extract_path(grid: &Grid, end: Point) -> Path {
     path
 }
 
+pub struct Data {
+    pub path: Path,
+    pub expansions: usize,
+}
+
 pub fn astar<H, D, P>(grid: &mut Grid,
                       source: &Point,
                       target: &Point,
                       heuristic: H,
                       cost: D,
                       passable: P)
-                      -> Option<Path>
+                      -> Option<Data>
     where H: Fn(&Point, &Point) -> Distance,
           D: Fn(&Point, &Point) -> Distance,
           P: Fn(&Tile) -> bool
 {
     grid.restage();
 
-    for row in grid.iter() {
-        println!();
-        for cell in row.iter() {
-            let v = if cell.visited() { "x" } else { "o" };
-            print!("{}", v);
-        }
-    }
-
     let mut open = BinaryHeap::new();
+    let mut expansions = 0;
 
     grid[source].visit_initial(Distance::octile(source, target));
     open.push(Node {
@@ -88,9 +86,13 @@ pub fn astar<H, D, P>(grid: &mut Grid,
               });
 
     while let Some(expand) = open.pop() {
+        expansions += 1;
         let point = expand.point();
         if point == target {
-            return Some(extract_path(grid, *point));
+            return Some( Data {
+                path: extract_path(grid, *point),
+                expansions: expansions,
+            });
         } else {
             let g = grid[point].g();
             for neighbor in point.neighbors().iter() {
@@ -133,7 +135,7 @@ map
                          Distance::octile,
                          Distance::euclidean,
                          Tile::passable)
-                .unwrap();
+                .unwrap().path;
 
         assert_eq!(path.len(), 0);
 
@@ -143,7 +145,7 @@ map
                          Distance::octile,
                          Distance::euclidean,
                          Tile::passable)
-                .unwrap();
+                .unwrap().path;
 
         assert_eq!(path.len(), 5);
     }

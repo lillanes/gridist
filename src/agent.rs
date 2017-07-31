@@ -1,16 +1,23 @@
 use grid::{Distance, Grid, Point, Tile};
 use search::{astar, Path};
 
+#[derive(Debug)]
+pub struct Datum {
+    pub action: Point,
+    pub expansions: usize,
+}
+
 pub trait Agent {
     fn act(&mut self,
            grid: &mut Grid,
            location: &Point,
            target: &Point)
-           -> Option<Point>;
+           -> Option<Datum>;
 
     fn reset(&mut self) {}
 }
 
+#[derive(Debug)]
 pub struct AlwaysAstar<H, C> {
     heuristic: H,
     cost: C,
@@ -33,17 +40,25 @@ impl<H, C> Agent for AlwaysAstar<H, C>
            grid: &mut Grid,
            location: &Point,
            target: &Point)
-           -> Option<Point> {
+           -> Option<Datum> {
         astar(grid,
               &location,
               &target,
               &self.heuristic,
               &self.cost,
               Tile::freespace)
-                .and_then(|mut path| path.pop())
+                .and_then(|mut data| {
+                    data.path.pop().map(|next| {
+                                            Datum {
+                                                action: next,
+                                                expansions: data.expansions,
+                                            }
+                                        })
+                })
     }
 }
 
+#[derive(Debug)]
 pub struct RepeatedAstar<H, C> {
     heuristic: H,
     cost: C,
@@ -65,13 +80,18 @@ impl<H, C> RepeatedAstar<H, C>
     fn update_path(&mut self,
                    grid: &mut Grid,
                    location: &Point,
-                   target: &Point) {
-        self.path = astar(grid,
-                          location,
-                          target,
-                          &self.heuristic,
-                          &self.cost,
-                          Tile::freespace);
+                   target: &Point)
+                   -> usize {
+        astar(grid,
+              location,
+              target,
+              &self.heuristic,
+              &self.cost,
+              Tile::freespace)
+                .map_or(0, |data| {
+                    self.path = Some(data.path);
+                    data.expansions
+                })
     }
 
     fn follow_path(&mut self) -> Option<Point> {
@@ -87,15 +107,23 @@ impl<H, C> Agent for RepeatedAstar<H, C>
            grid: &mut Grid,
            location: &Point,
            target: &Point)
-           -> Option<Point> {
+           -> Option<Datum> {
         if let Some(next) = self.follow_path() {
             if grid[&next].freespace() {
-                return Some(next);
+                return Some(Datum {
+                                action: next,
+                                expansions: 0,
+                            });
             }
         }
 
-        self.update_path(grid, location, target);
-        self.follow_path()
+        let expansions = self.update_path(grid, location, target);
+        self.follow_path().map(|next| {
+                                   Datum {
+                                       action: next,
+                                       expansions: expansions,
+                                   }
+                               })
     }
 
     fn reset(&mut self) {
