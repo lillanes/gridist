@@ -1,12 +1,12 @@
 #![feature(test)]
 
-extern crate grids;
+extern crate gridist;
 extern crate test;
 
-use grids::agent::{AlwaysAstar, RepeatedAstar};
-use grids::experiment::{Experiment, Verbosity};
-use grids::grid::{Distance, Measure};
-use grids::parser::grid_from_file;
+use gridist::agent::{AlwaysAstar, RepeatedAstar};
+use gridist::experiment::{Experiment, Verbosity};
+use gridist::grid::{Distance, Measure};
+use gridist::parser::grid_from_file;
 
 use test::Bencher;
 

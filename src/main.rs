@@ -1,6 +1,6 @@
-extern crate grids;
+extern crate gridist;
 
-use grids::arguments::run_experiment_from_cli;
+use gridist::arguments::run_experiment_from_cli;
 
 fn main() {
     run_experiment_from_cli();

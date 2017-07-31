@@ -1,5 +1,5 @@
 [package]
-name = "grids"
+name = "gridist"
 version = "0.1.0"
 authors = ["León Illanes <lillanes@cs.toronto.edu>"]
 
