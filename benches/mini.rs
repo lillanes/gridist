@@ -11,7 +11,7 @@ use gridist::parser::grid_from_file;
 use test::Bencher;
 
 #[bench]
-fn repeated_astar_50_times(b: &mut Bencher) {
+fn mini_rastar(b: &mut Bencher) {
     let grid = grid_from_file("maps/Mini.map");
 
     let heuristic = Distance::octile;
@@ -30,7 +30,7 @@ fn repeated_astar_50_times(b: &mut Bencher) {
 }
 
 #[bench]
-fn always_astar_50_times(b: &mut Bencher) {
+fn mini_astar(b: &mut Bencher) {
     let grid = grid_from_file("maps/Mini.map");
 
     let heuristic = Distance::octile;
