@@ -1,10 +1,10 @@
-use agent::Agent;
-use grid::{Distance, Grid, Point};
-
 use std::mem::replace;
 
 use rand::{SeedableRng, StdRng};
 use rand::distributions::{IndependentSample, Range};
+
+use agent::Agent;
+use grid::{Distance, Grid, Point};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Data {
@@ -55,10 +55,6 @@ impl<'a, A> Instance<'a, A>
             data: Data::default(),
             verbosity: verbosity,
         }
-    }
-
-    pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        self.verbosity = verbosity;
     }
 
     fn move_agent(&mut self, point: Point) {
@@ -237,7 +233,6 @@ map
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
         let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
-        instance.set_verbosity(Verbosity::Two);
 
         let results = instance.run_trials(98, 100, 0);
         let results =

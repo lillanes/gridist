@@ -1,7 +1,7 @@
-use grid::{Distance, Grid, Measure, Point, Tile};
-
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+
+use grid::{Distance, Grid, Measure, Point, Tile};
 
 #[derive(Debug)]
 struct Node {

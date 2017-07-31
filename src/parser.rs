@@ -1,9 +1,9 @@
-use grid::{Grid, Terrain, Tile};
-
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufReader, Error as IOError, Read};
 use std::path::Path;
+
+use grid::{Grid, Terrain, Tile};
 
 #[derive(Debug)]
 struct ParseError {
