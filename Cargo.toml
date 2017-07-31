@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["León Illanes <lillanes@cs.toronto.edu>"]
 
 [dependencies]
+docopt = "0.8"
+rand = "0.3"

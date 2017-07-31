@@ -4,6 +4,8 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::ops::{Index, IndexMut};
 use std::slice::Iter;
 
+use search::astar;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Point {
     pub y: usize,
@@ -160,6 +162,10 @@ impl Tile {
         self.terrain.passable()
     }
 
+    pub fn belief(&self) -> &Belief {
+        &self.belief
+    }
+
     pub fn freespace(&self) -> bool {
         self.belief != Belief::Impassable
     }
@@ -237,6 +243,14 @@ impl Grid {
         }
     }
 
+    pub fn forget(&mut self) {
+        for row in self.tiles.iter_mut() {
+            for cell in row.iter_mut() {
+                cell.forget();
+            }
+        }
+    }
+
     pub fn look(&mut self, point: &Point) {
         for neighbor in point.neighbors().iter() {
             if let Some(ref mut tile) = self.get_mut(neighbor) {
@@ -247,6 +261,24 @@ impl Grid {
 
     pub fn iter(&self) -> Iter<Vec<Tile>> {
         self.tiles.iter()
+    }
+
+    pub fn height(&self) -> usize {
+        self.tiles.len()
+    }
+
+    pub fn width(&self) -> usize {
+        self.tiles.get(0).map_or(0, |row| row.len())
+    }
+
+    pub fn has_path(&mut self, source: &Point, target: &Point) -> bool {
+        astar(self,
+              source,
+              target,
+              Distance::octile,
+              Distance::euclidean,
+              Tile::passable)
+                .is_some()
     }
 }
 
