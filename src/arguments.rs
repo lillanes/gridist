@@ -1,12 +1,11 @@
 use docopt::Docopt;
+use serde::de;
 
 use agent::{AlwaysAstar, RepeatedAstar};
-use experiment::Experiment;
-use instance::{Data, Verbosity};
+use experiment::{Experiment, Verbosity};
+use instance::Data;
 use grid::{Distance, Measure, Point};
 use parser::grid_from_file;
-
-use serde::de;
 
 const USAGE: &'static str = "
 Usage:

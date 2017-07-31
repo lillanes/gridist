@@ -4,6 +4,7 @@ use rand::{SeedableRng, StdRng};
 use rand::distributions::{IndependentSample, Range};
 
 use agent::Agent;
+use experiment::Verbosity;
 use grid::{Distance, Grid, Point};
 
 #[derive(Debug, Default, PartialEq)]
@@ -12,24 +13,6 @@ pub struct Data {
     pub steps: usize,
     pub episodes: usize,
     pub expansions: usize,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub enum Verbosity {
-    Zero,
-    One,
-    Two,
-}
-
-impl Verbosity {
-    pub fn new(value: u8) -> Verbosity {
-        match value {
-            0 => Verbosity::Zero,
-            1 => Verbosity::One,
-            2 => Verbosity::Two,
-            _ => Verbosity::Two,
-        }
-    }
 }
 
 #[derive(Debug)]

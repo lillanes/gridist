@@ -1,6 +1,24 @@
 use agent::Agent;
 use grid::Grid;
-use instance::{Data, Instance, Verbosity};
+use instance::{Data, Instance};
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+pub enum Verbosity {
+    Zero,
+    One,
+    Two,
+}
+
+impl Verbosity {
+    pub fn new(value: u8) -> Verbosity {
+        match value {
+            0 => Verbosity::Zero,
+            1 => Verbosity::One,
+            2 => Verbosity::Two,
+            _ => Verbosity::Two,
+        }
+    }
+}
 
 pub struct Experiment {
     grid: Grid,
