@@ -1,7 +1,7 @@
 extern crate rand;
 
 mod agent;
-mod experiment;
+mod instance;
 mod grid;
 mod parser;
 mod search;

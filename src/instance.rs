@@ -34,7 +34,7 @@ impl Verbosity {
 }
 
 #[derive(Debug)]
-pub struct Experiment<'a, A, C> {
+pub struct Instance<'a, A, C> {
     grid: &'a mut Grid,
     cost: C,
     agent: A,
@@ -43,12 +43,12 @@ pub struct Experiment<'a, A, C> {
     verbosity: Verbosity,
 }
 
-impl<'a, A, C> Experiment<'a, A, C>
+impl<'a, A, C> Instance<'a, A, C>
     where A: Agent,
           C: Fn(&Point, &Point) -> Distance
 {
-    pub fn new(grid: &'a mut Grid, agent: A, cost: C) -> Experiment<'a, A, C> {
-        Experiment {
+    pub fn new(grid: &'a mut Grid, agent: A, cost: C) -> Instance<'a, A, C> {
+        Instance {
             grid: grid,
             cost: cost,
             agent: agent,
@@ -192,10 +192,10 @@ map
         let goal = Point::new(3, 3);
 
         let agent = AlwaysAstar::new(Distance::octile, Distance::euclidean);
-        let mut experiment =
-            Experiment::new(&mut grid, agent, Distance::euclidean);
+        let mut instance =
+            Instance::new(&mut grid, agent, Distance::euclidean);
 
-        let results = experiment.run_once(start, goal).unwrap();
+        let results = instance.run_once(start, goal).unwrap();
 
         assert_eq!(results.steps, 5);
         assert_eq!(results.cost, 4.0 + SQRT_2);
@@ -217,10 +217,10 @@ map
         let goal = Point::new(3, 3);
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut experiment =
-            Experiment::new(&mut grid, agent, Distance::euclidean);
+        let mut instance =
+            Instance::new(&mut grid, agent, Distance::euclidean);
 
-        let results = experiment.run_once(start, goal).unwrap();
+        let results = instance.run_once(start, goal).unwrap();
 
         assert_eq!(results.steps, 5);
         assert_eq!(results.cost, 4.0 + SQRT_2);
@@ -239,11 +239,11 @@ map
 ....");
 
         let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
-        let mut experiment =
-            Experiment::new(&mut grid, agent, Distance::euclidean);
-        experiment.set_verbosity(Verbosity::Two);
+        let mut instance =
+            Instance::new(&mut grid, agent, Distance::euclidean);
+        instance.set_verbosity(Verbosity::Two);
 
-        let results = experiment.run_trials(98, 100, 0);
+        let results = instance.run_trials(98, 100, 0);
         let results =
             results.into_iter().map(|e| e.unwrap()).collect::<Vec<_>>();
 
@@ -253,7 +253,7 @@ map
         assert_eq!(results[1].steps, 3);
         assert_eq!(results[1].episodes, 1);
 
-        let new_results = experiment.run_trials(99, 100, 0);
+        let new_results = instance.run_trials(99, 100, 0);
         let new_results =
             new_results.into_iter().map(|e| e.unwrap()).collect::<Vec<_>>();
 
