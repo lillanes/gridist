@@ -69,7 +69,7 @@ fn get_distance(argument: DistanceMetric) -> (fn(&Point, &Point) -> Distance) {
     }
 }
 
-fn run_experiment_from_args(args: Args) -> Vec<Option<Data>> {
+fn run_experiment_from_args(args: Args) -> Data {
     let grid = grid_from_file(&args.arg_map);
     let heuristic = get_distance(args.flag_heuristic);
     let cost = get_distance(args.flag_cost);
@@ -88,7 +88,7 @@ fn run_experiment_from_args(args: Args) -> Vec<Option<Data>> {
     }
 }
 
-pub fn run_experiment_from_cli() -> Vec<Option<Data>> {
+pub fn run_experiment_from_cli() -> Data {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());

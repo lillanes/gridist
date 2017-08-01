@@ -44,7 +44,7 @@ impl Experiment {
         }
     }
 
-    pub fn run<A>(&mut self, agent: A) -> Vec<Option<Data>>
+    pub fn run<A>(&mut self, agent: A) -> Data
         where A: Agent
     {
         let mut instance = Instance::new(&mut self.grid, agent, self.verbosity);

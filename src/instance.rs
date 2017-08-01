@@ -1,4 +1,5 @@
 use std::mem::replace;
+use std::ops::Index;
 
 use rand::{SeedableRng, StdRng};
 use rand::distributions::{IndependentSample, Range};
@@ -7,12 +8,48 @@ use agent::Agent;
 use experiment::Verbosity;
 use grid::{Distance, Grid, Point};
 
-#[derive(Debug, Default, PartialEq)]
-pub struct Data {
+#[derive(Debug, Default)]
+pub struct Datum {
     pub cost: Distance,
     pub steps: usize,
     pub episodes: usize,
     pub expansions: usize,
+}
+
+#[derive(Debug, Default)]
+pub struct Data(Vec<Option<Datum>>);
+
+impl Data {
+    pub fn new(capacity: usize) -> Data {
+        Data(Vec::with_capacity(capacity))
+    }
+
+    pub fn push(&mut self, datum: Option<Datum>) {
+        self.0.push(datum);
+    }
+
+    pub fn print(&self) {
+        for (i, datum) in self.0.iter().enumerate() {
+            print!("Trial {}: ", i);
+            if let Some(ref datum) = *datum {
+                println!("{} ({} steps, {} episodes, {} expansions)",
+                         datum.cost,
+                         datum.steps,
+                         datum.episodes,
+                         datum.expansions);
+            } else {
+                println!("<none>");
+            }
+        }
+    }
+}
+
+impl Index<usize> for Data {
+    type Output = Option<Datum>;
+
+    fn index(&self, index: usize) -> &Option<Datum> {
+        &self.0[index]
+    }
 }
 
 #[derive(Debug)]
@@ -20,7 +57,7 @@ pub struct Instance<'a, A> {
     grid: &'a mut Grid,
     agent: A,
     location: Point,
-    data: Data,
+    data: Datum,
     verbosity: Verbosity,
 }
 
@@ -35,7 +72,7 @@ impl<'a, A> Instance<'a, A>
             grid: grid,
             agent: agent,
             location: Point::new(0, 0),
-            data: Data::default(),
+            data: Datum::default(),
             verbosity: verbosity,
         }
     }
@@ -64,8 +101,8 @@ impl<'a, A> Instance<'a, A>
         println!();
     }
 
-    pub fn run_once(&mut self, source: Point, target: Point) -> Option<Data> {
-        self.data = Data::default();
+    pub fn run_once(&mut self, source: Point, target: Point) -> Option<Datum> {
+        self.data = Datum::default();
         self.agent.reset();
         self.location = source;
         self.grid.look(&self.location);
@@ -88,7 +125,7 @@ impl<'a, A> Instance<'a, A>
                 if self.verbosity >= Verbosity::Two {
                     self.print(&target);
                 }
-                return Some(replace(&mut self.data, Data::default()));
+                return Some(replace(&mut self.data, Datum::default()));
             }
         }
         return None;
@@ -130,10 +167,10 @@ impl<'a, A> Instance<'a, A>
                       start: usize,
                       end: usize,
                       seed: usize)
-                      -> Vec<Option<Data>> {
+                      -> Data {
         let trials = self.build_trials(start, end, seed);
 
-        let mut results = Vec::with_capacity(end - start);
+        let mut results = Data::new(end - start);
         for trial in trials.iter() {
             if self.verbosity >= Verbosity::One {
                 println!("Running search from {} to {}.", trial.0, trial.1);
@@ -218,19 +255,22 @@ map
         let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_trials(98, 100, 0);
-        let results =
-            results.into_iter().map(|e| e.unwrap()).collect::<Vec<_>>();
 
-        assert_eq!(results[0].steps, 4);
-        assert_eq!(results[0].episodes, 2);
+        let first = results[0].as_ref().unwrap();
+        assert_eq!(first.steps, 4);
+        assert_eq!(first.episodes, 2);
 
-        assert_eq!(results[1].steps, 3);
-        assert_eq!(results[1].episodes, 1);
+        let second = results[1].as_ref().unwrap();
+        assert_eq!(second.steps, 3);
+        assert_eq!(second.episodes, 1);
 
         let new_results = instance.run_trials(99, 100, 0);
-        let new_results =
-            new_results.into_iter().map(|e| e.unwrap()).collect::<Vec<_>>();
 
-        assert_eq!(results[1], new_results[0]);
+        let new_result = new_results[0].as_ref().unwrap();
+
+        assert_eq!(second.cost, new_result.cost);
+        assert_eq!(second.steps, new_result.steps);
+        assert_eq!(second.episodes, new_result.episodes);
+        assert_eq!(second.expansions, new_result.expansions);
     }
 }
