@@ -10,7 +10,14 @@ use parser::grid_from_file;
 const USAGE: &'static str = "
 Usage:
     gridist <map> <trials> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--cost=<cost>] [--verbosity=<verbosity>] [--from=<from>] [--seed=<seed>]
+    gridist <map> <starty> <startx> <endy> <endx> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--cost=<cost>] [--verbosity=<verbosity>]
     gridist --help
+
+Arguments:
+    <map>              Path to a map file in the movingai.com format.
+    <trials>           Number of randomized trials to run.
+    <starty>/<startx>  Starting point coordinates for single run.
+    <endy>/<endx>      End point coordinates for single run.
 
 Options:
     -h, --help               Show this screen.
@@ -53,7 +60,11 @@ impl<'de> de::Deserialize<'de> for Verbosity {
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_map: String,
-    arg_trials: usize,
+    arg_trials: Option<usize>,
+    arg_startx: usize,
+    arg_starty: usize,
+    arg_endx: usize,
+    arg_endy: usize,
     flag_algorithm: Algorithm,
     flag_heuristic: DistanceMetric,
     flag_cost: DistanceMetric,
@@ -69,16 +80,10 @@ fn get_distance(argument: DistanceMetric) -> (fn(&Point, &Point) -> Distance) {
     }
 }
 
-fn run_experiment_from_args(args: Args) -> Data {
-    let grid = grid_from_file(&args.arg_map);
+fn run_algorithm(experiment: &mut Experiment, args: Args) -> Data {
+
     let heuristic = get_distance(args.flag_heuristic);
     let cost = get_distance(args.flag_cost);
-
-    let mut experiment = Experiment::new(grid,
-                                         args.flag_from,
-                                         args.flag_from + args.arg_trials,
-                                         args.flag_seed,
-                                         args.flag_verbosity);
 
     match args.flag_algorithm {
         Algorithm::Astar => experiment.run(AlwaysAstar::new(heuristic, cost)),
@@ -88,12 +93,31 @@ fn run_experiment_from_args(args: Args) -> Data {
     }
 }
 
+fn run_from_args(args: Args) -> Data {
+    let grid = grid_from_file(&args.arg_map);
+
+    let mut experiment = if let Some(trials) = args.arg_trials {
+        Experiment::trials(grid,
+                           args.flag_from,
+                           args.flag_from + trials,
+                           args.flag_seed,
+                           args.flag_verbosity)
+    } else {
+        Experiment::single(grid,
+                           Point::new(args.arg_starty, args.arg_startx),
+                           Point::new(args.arg_endy, args.arg_endx),
+                           args.flag_verbosity)
+    };
+
+    run_algorithm(&mut experiment, args)
+}
+
 pub fn run_experiment_from_cli() -> Data {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    run_experiment_from_args(args)
+    run_from_args(args)
 }
 
 #[cfg(test)]
@@ -107,6 +131,20 @@ mod tests {
             .and_then(|d| d.argv(argv.into_iter()).deserialize())
             .unwrap();
 
-        run_experiment_from_args(args);
+        println!("Args:\n{:?}", args);
+
+        run_from_args(args);
+    }
+
+    #[test]
+    fn run_fixed_trial() {
+        let argv = vec!["gridist", "maps/Mini.map", "0", "0", "9", "9"];
+        let args: Args = Docopt::new(USAGE)
+            .and_then(|d| d.argv(argv.into_iter()).deserialize())
+            .unwrap();
+
+        println!("Args:\n{:?}", args);
+
+        run_from_args(args);
     }
 }

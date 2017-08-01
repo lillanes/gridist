@@ -17,7 +17,7 @@ fn enigma_rastar(b: &mut Bencher) {
     let heuristic = Distance::octile;
     let cost = Distance::euclidean;
 
-    let mut experiment = Experiment::new(grid, 0, 5, 0, Verbosity::Zero);
+    let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
 
 
     b.iter(|| { experiment.run(RepeatedAstar::new(heuristic, cost)); })
@@ -30,7 +30,7 @@ fn enigma_astar(b: &mut Bencher) {
     let heuristic = Distance::octile;
     let cost = Distance::euclidean;
 
-    let mut experiment = Experiment::new(grid, 0, 5, 0, Verbosity::Zero);
+    let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
 
 
     b.iter(|| { experiment.run(AlwaysAstar::new(heuristic, cost)); })

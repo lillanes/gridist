@@ -1,5 +1,5 @@
 use agent::Agent;
-use grid::Grid;
+use grid::{Grid, Point};
 use instance::{Data, Instance};
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -20,26 +20,57 @@ impl Verbosity {
     }
 }
 
-pub struct Experiment {
-    grid: Grid,
+struct RandomTrialData {
     start: usize,
     end: usize,
     seed: usize,
+}
+
+struct PointPair {
+    source: Point,
+    target: Point,
+}
+
+enum Configuration {
+    Trials(RandomTrialData),
+    Single(PointPair),
+}
+
+pub struct Experiment {
+    grid: Grid,
+    config: Configuration,
     verbosity: Verbosity,
 }
 
 impl Experiment {
-    pub fn new(grid: Grid,
-               start: usize,
-               end: usize,
-               seed: usize,
-               verbosity: Verbosity)
-               -> Experiment {
+    pub fn trials(grid: Grid,
+                  start: usize,
+                  end: usize,
+                  seed: usize,
+                  verbosity: Verbosity)
+                  -> Experiment {
         Experiment {
             grid: grid,
-            start: start,
-            end: end,
-            seed: seed,
+            config: Configuration::Trials(RandomTrialData {
+                                              start: start,
+                                              end: end,
+                                              seed: seed,
+                                          }),
+            verbosity: verbosity,
+        }
+    }
+
+    pub fn single(grid: Grid,
+                  source: Point,
+                  target: Point,
+                  verbosity: Verbosity)
+                  -> Experiment {
+        Experiment {
+            grid: grid,
+            config: Configuration::Single(PointPair {
+                                              source: source,
+                                              target: target,
+                                          }),
             verbosity: verbosity,
         }
     }
@@ -48,6 +79,16 @@ impl Experiment {
         where A: Agent
     {
         let mut instance = Instance::new(&mut self.grid, agent, self.verbosity);
-        instance.run_trials(self.start, self.end, self.seed)
+
+        match self.config {
+            Configuration::Trials(ref trials) => {
+                instance.run_trials(trials.start, trials.end, trials.seed)
+            }
+            Configuration::Single(ref single) => {
+                let mut data = Data::new(1);
+                data.push(instance.run_once(single.source, single.target));
+                data
+            }
+        }
     }
 }
