@@ -133,7 +133,7 @@ pub struct Tile {
     parent: Option<Point>,
     g: Distance,
     h: Distance,
-    visited: bool,
+    visited: usize,
 }
 
 impl Tile {
@@ -144,7 +144,7 @@ impl Tile {
             parent: None,
             g: 0.0,
             h: 0.0,
-            visited: false,
+            visited: 0,
         }
     }
 
@@ -182,26 +182,26 @@ impl Tile {
         self.g
     }
 
-    pub fn visited(&self) -> bool {
-        self.visited
+    pub fn visited(&self, episode: usize) -> bool {
+        self.visited == episode
     }
 
-    pub fn visit(&mut self, parent: Point, g: Distance, h: Distance) {
+    pub fn visit(&mut self,
+                 parent: Point,
+                 g: Distance,
+                 h: Distance,
+                 episode: usize) {
         self.parent = Some(parent);
-        self.visited = true;
+        self.visited = episode;
         self.g = g;
         self.h = h;
     }
 
-    pub fn visit_initial(&mut self, h: Distance) {
+    pub fn visit_initial(&mut self, h: Distance, episode: usize) {
         self.parent = None;
-        self.visited = true;
+        self.visited = episode;
         self.g = 0.0;
         self.h = h;
-    }
-
-    pub fn unvisit(&mut self) {
-        self.visited = false;
     }
 
     pub fn forget(&mut self) {
@@ -218,11 +218,15 @@ impl Display for Tile {
 #[derive(Debug)]
 pub struct Grid {
     tiles: Vec<Vec<Tile>>,
+    episode: usize,
 }
 
 impl Grid {
     pub fn new(tiles: Vec<Vec<Tile>>) -> Grid {
-        Grid { tiles: tiles }
+        Grid {
+            tiles: tiles,
+            episode: 0,
+        }
     }
 
     pub fn get(&self, point: &Point) -> Option<&Tile> {
@@ -233,14 +237,9 @@ impl Grid {
         self.tiles.get_mut(point.y()).and_then(|row| row.get_mut(point.x()))
     }
 
-    /// Marks all cells as unvisited (i.e. not Open or Closed). Must be called
-    /// before every search episode.
-    pub fn restage(&mut self) {
-        for row in self.tiles.iter_mut() {
-            for cell in row.iter_mut() {
-                cell.unvisit();
-            }
-        }
+    pub fn next_episode(&mut self) -> usize {
+        self.episode += 1;
+        self.episode
     }
 
     pub fn forget(&mut self) {

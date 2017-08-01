@@ -78,12 +78,12 @@ pub fn astar<H, D, P>(grid: &mut Grid,
           D: Fn(&Point, &Point) -> Distance,
           P: Fn(&Tile) -> bool
 {
-    grid.restage();
+    let episode = grid.next_episode();
 
     let mut open = BinaryHeap::new();
     let mut expansions = 0;
 
-    grid[source].visit_initial(Distance::octile(source, target));
+    grid[source].visit_initial(Distance::octile(source, target), episode);
     open.push(Node {
                   point: *source,
                   f: grid[source].f(),
@@ -102,9 +102,12 @@ pub fn astar<H, D, P>(grid: &mut Grid,
             let g = grid[point].g();
             for neighbor in point.neighbors().iter() {
                 if let Some(ref mut tile) = grid.get_mut(neighbor) {
-                    if !tile.visited() && passable(tile) {
+                    if !tile.visited(episode) && passable(tile) {
                         let h = heuristic(neighbor, target);
-                        tile.visit(*point, g + cost(point, neighbor), h);
+                        tile.visit(*point,
+                                   g + cost(point, neighbor),
+                                   h,
+                                   episode);
                         open.push(Node {
                                       point: *neighbor,
                                       f: tile.f(),
