@@ -17,16 +17,10 @@ fn mini_rastar(b: &mut Bencher) {
     let heuristic = Distance::octile;
     let cost = Distance::euclidean;
 
-    let mut experiment = Experiment::new(grid,
-                                         0,
-                                         50,
-                                         0,
-                                         Verbosity::Zero);
+    let mut experiment = Experiment::new(grid, 0, 50, 0, Verbosity::Zero);
 
 
-    b.iter(|| {
-        experiment.run(RepeatedAstar::new(heuristic, cost));
-    })
+    b.iter(|| { experiment.run(RepeatedAstar::new(heuristic, cost)); })
 }
 
 #[bench]
@@ -36,14 +30,8 @@ fn mini_astar(b: &mut Bencher) {
     let heuristic = Distance::octile;
     let cost = Distance::euclidean;
 
-    let mut experiment = Experiment::new(grid,
-                                         0,
-                                         50,
-                                         0,
-                                         Verbosity::Zero);
+    let mut experiment = Experiment::new(grid, 0, 50, 0, Verbosity::Zero);
 
 
-    b.iter(|| {
-        experiment.run(AlwaysAstar::new(heuristic, cost));
-    })
+    b.iter(|| { experiment.run(AlwaysAstar::new(heuristic, cost)); })
 }
