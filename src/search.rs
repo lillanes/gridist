@@ -7,6 +7,7 @@ use grid::{Distance, Grid, Measure, Point, Tile};
 struct Node {
     point: Point,
     f: Distance,
+    g: Distance,
 }
 
 impl Node {
@@ -32,6 +33,9 @@ impl PartialOrd for Node {
 impl Ord for Node {
     fn cmp(&self, other: &Node) -> Ordering {
         match other.f.partial_cmp(&self.f) {
+            Some(Ordering::Equal) => {
+                self.g.partial_cmp(&other.g).unwrap_or(Ordering::Equal)
+            }
             Some(o) => o,
             None => Ordering::Equal,
         }
@@ -83,16 +87,17 @@ pub fn astar<H, D, P>(grid: &mut Grid,
     open.push(Node {
                   point: *source,
                   f: grid[source].f(),
+                  g: grid[source].g(),
               });
 
     while let Some(expand) = open.pop() {
         expansions += 1;
         let point = expand.point();
         if point == target {
-            return Some( Data {
-                path: extract_path(grid, *point),
-                expansions: expansions,
-            });
+            return Some(Data {
+                            path: extract_path(grid, *point),
+                            expansions: expansions,
+                        });
         } else {
             let g = grid[point].g();
             for neighbor in point.neighbors().iter() {
@@ -103,6 +108,7 @@ pub fn astar<H, D, P>(grid: &mut Grid,
                         open.push(Node {
                                       point: *neighbor,
                                       f: tile.f(),
+                                      g: tile.g(),
                                   });
                     }
                 }
@@ -135,7 +141,8 @@ map
                          Distance::octile,
                          Distance::euclidean,
                          Tile::passable)
-                .unwrap().path;
+                .unwrap()
+                .path;
 
         assert_eq!(path.len(), 0);
 
@@ -145,7 +152,8 @@ map
                          Distance::octile,
                          Distance::euclidean,
                          Tile::passable)
-                .unwrap().path;
+                .unwrap()
+                .path;
 
         assert_eq!(path.len(), 5);
     }
