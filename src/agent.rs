@@ -36,14 +36,14 @@ impl<H> Agent for AlwaysAstar<H>
            location: &Point,
            target: &Point)
            -> Option<Datum> {
-        astar(grid, &location, &target, &self.heuristic, Tile::freespace)
+        astar(grid, location, target, &self.heuristic, Tile::freespace)
             .and_then(|mut data| {
                 data.path.pop().map(|next| {
-                    Datum {
-                        action: next,
-                        expansions: data.expansions,
-                    }
-                })
+                                        Datum {
+                                            action: next,
+                                            expansions: data.expansions,
+                                        }
+                                    })
             })
     }
 }
@@ -100,11 +100,11 @@ impl<H> Agent for RepeatedAstar<H>
 
         let expansions = self.update_path(grid, location, target);
         self.follow_path().map(|next| {
-            Datum {
-                action: next,
-                expansions: expansions,
-            }
-        })
+                                   Datum {
+                                       action: next,
+                                       expansions: expansions,
+                                   }
+                               })
     }
 
     fn reset(&mut self) {

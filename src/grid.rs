@@ -251,7 +251,7 @@ impl Grid {
     }
 
     pub fn forget(&mut self) {
-        for row in self.tiles.iter_mut() {
+        for row in &mut self.tiles {
             for cell in row.iter_mut() {
                 cell.forget();
             }
@@ -259,8 +259,8 @@ impl Grid {
     }
 
     pub fn look(&mut self, point: &Point) {
-        self.get_mut(&point).map(|p| p.look());
-        for neighbor in point.neighbors().iter() {
+        self.get_mut(point).map(|p| p.look());
+        for neighbor in &point.neighbors() {
             if let Some(ref mut tile) =
                 neighbor.and_then(|n| self.get_mut(&n)) {
                 tile.look();
@@ -306,7 +306,7 @@ impl<'a> IndexMut<&'a Point> for Grid {
 
 impl Display for Grid {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        for row in self.tiles.iter() {
+        for row in &self.tiles {
             for tile in row.iter() {
                 write!(f, "{}", tile)?;
             }

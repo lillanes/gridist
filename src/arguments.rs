@@ -71,16 +71,16 @@ struct Args {
     flag_seed: usize,
 }
 
-fn get_heuristic(argument: Heuristic) -> (fn(&Point, &Point) -> Distance) {
-    match argument {
+fn get_heuristic(argument: &Heuristic) -> (fn(&Point, &Point) -> Distance) {
+    match *argument {
         Heuristic::Euclidean => Distance::euclidean_heuristic,
         Heuristic::Octile => Distance::octile_heuristic,
     }
 }
 
-fn run_algorithm(experiment: &mut Experiment, args: Args) -> Data {
+fn run_algorithm(experiment: &mut Experiment, args: &Args) -> Data {
 
-    let heuristic = get_heuristic(args.flag_heuristic);
+    let heuristic = get_heuristic(&args.flag_heuristic);
 
     match args.flag_algorithm {
         Algorithm::Astar => experiment.run(AlwaysAstar::new(heuristic)),
@@ -88,7 +88,7 @@ fn run_algorithm(experiment: &mut Experiment, args: Args) -> Data {
     }
 }
 
-fn run_from_args(args: Args) -> Data {
+fn run_from_args(args: &Args) -> Data {
     let grid = grid_from_file(&args.arg_map);
 
     let mut experiment = if let Some(trials) = args.arg_trials {
@@ -112,7 +112,7 @@ pub fn run_experiment_from_cli() -> Data {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    run_from_args(args)
+    run_from_args(&args)
 }
 
 #[cfg(test)]
@@ -128,7 +128,7 @@ mod tests {
 
         println!("Args:\n{:?}", args);
 
-        run_from_args(args);
+        run_from_args(&args);
     }
 
     #[test]
@@ -140,6 +140,6 @@ mod tests {
 
         println!("Args:\n{:?}", args);
 
-        run_from_args(args);
+        run_from_args(&args);
     }
 }

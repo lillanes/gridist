@@ -127,7 +127,8 @@ impl<'a, A> Instance<'a, A>
                 return Some(replace(&mut self.data, Datum::default()));
             }
         }
-        return None;
+
+        None
     }
 
     fn build_trials(&mut self,
@@ -170,7 +171,7 @@ impl<'a, A> Instance<'a, A>
         let trials = self.build_trials(start, end, seed);
 
         let mut results = Data::new(end - start);
-        for trial in trials.iter() {
+        for trial in &trials {
             if self.verbosity >= Verbosity::One {
                 println!("Running search from {} to {}.", trial.0, trial.1);
             }

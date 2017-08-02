@@ -118,7 +118,8 @@ pub fn astar<H, P>(grid: &mut Grid,
             }
         }
     }
-    return None;
+
+    None
 }
 
 #[cfg(test)]

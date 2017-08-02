@@ -123,18 +123,16 @@ impl Parser {
             self.consume_ws();
             for _ in 0..width {
                 let value = match self.data[self.position] {
-                    '.' => Terrain::Ground,
-                    'G' => Terrain::Ground,
-                    '@' => Terrain::OutOfBounds,
-                    'O' => Terrain::OutOfBounds,
+                    '.' | 'G' => Terrain::Ground,
+                    '@' | 'O' => Terrain::OutOfBounds,
                     'T' => Terrain::Trees,
                     'S' => Terrain::Swamp,
                     'W' => Terrain::Water,
                     '\n' => {
-                        let message = format!("Unexpected end of line.");
+                        let message = "Unexpected end of line.".to_owned();
                         return Err(self.error(message));
                     }
-                    other @ _ => {
+                    other => {
                         let message = format!("Unrecognized symbol: {}", other);
                         return Err(self.error(message));
                     }

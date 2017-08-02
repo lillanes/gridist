@@ -14,7 +14,6 @@ impl Verbosity {
         match value {
             0 => Verbosity::Zero,
             1 => Verbosity::One,
-            2 => Verbosity::Two,
             _ => Verbosity::Two,
         }
     }
