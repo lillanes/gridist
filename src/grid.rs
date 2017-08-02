@@ -6,6 +6,9 @@ use std::slice::Iter;
 
 use search::astar;
 
+pub const COST: [Distance; 8] = [SQRT_2, 1.0, SQRT_2, 1.0, 1.0, SQRT_2, 1.0,
+                                 SQRT_2];
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Point {
     pub y: usize,
@@ -25,19 +28,24 @@ impl Point {
         self.y
     }
 
-    pub fn neighbors(&self) -> Vec<Point> {
-        let yrange = if self.y < 1 { 0 } else { self.y - 1 }..self.y + 2;
-        let xrange = if self.x < 1 { 0 } else { self.x - 1 }..self.x + 2;
-        let mut neighbors = Vec::with_capacity(8);
-        for y in yrange {
-            for x in xrange.clone() {
-                if y == self.y && x == self.x {
-                    continue;
-                }
-                neighbors.push(Point::new(y, x));
+    pub fn neighbors(&self) -> [Option<Point>; 8] {
+        let mut ns = [None; 8];
+        if self.y > 0 {
+            if self.x > 0 {
+                ns[0] = Some(Point::new(self.y - 1, self.x - 1));
             }
+            ns[1] = Some(Point::new(self.y - 1, self.x));
+            ns[2] = Some(Point::new(self.y - 1, self.x + 1));
         }
-        neighbors
+        if self.x > 0 {
+            ns[3] = Some(Point::new(self.y, self.x - 1));
+            ns[5] = Some(Point::new(self.y + 1, self.x - 1));
+        }
+        ns[4] = Some(Point::new(self.y, self.x + 1));
+        ns[6] = Some(Point::new(self.y + 1, self.x));
+        ns[7] = Some(Point::new(self.y + 1, self.x + 1));
+
+        ns
     }
 }
 
@@ -48,22 +56,22 @@ impl Display for Point {
 }
 
 pub trait Measure {
-    fn euclidean(from: &Point, to: &Point) -> Self;
+    fn euclidean_heuristic(from: &Point, to: &Point) -> Self;
 
-    fn octile(from: &Point, to: &Point) -> Self;
+    fn octile_heuristic(from: &Point, to: &Point) -> Self;
 }
 
 pub type Distance = f64;
 
 impl Measure for Distance {
-    fn euclidean(from: &Point, to: &Point) -> Distance {
+    fn euclidean_heuristic(from: &Point, to: &Point) -> Distance {
         let dy = to.y as Distance - from.y as Distance;
         let dx = to.x as Distance - from.x as Distance;
 
         (dy * dy + dx * dx).sqrt()
     }
 
-    fn octile(from: &Point, to: &Point) -> Distance {
+    fn octile_heuristic(from: &Point, to: &Point) -> Distance {
         let dy = if to.y > from.y {
             to.y - from.y
         } else {
@@ -251,8 +259,10 @@ impl Grid {
     }
 
     pub fn look(&mut self, point: &Point) {
+        self.get_mut(&point).map(|p| p.look());
         for neighbor in point.neighbors().iter() {
-            if let Some(ref mut tile) = self.get_mut(neighbor) {
+            if let Some(ref mut tile) =
+                neighbor.and_then(|n| self.get_mut(&n)) {
                 tile.look();
             }
         }
@@ -274,8 +284,7 @@ impl Grid {
         astar(self,
               source,
               target,
-              Distance::octile,
-              Distance::euclidean,
+              Distance::octile_heuristic,
               Tile::passable)
                 .is_some()
     }
@@ -312,26 +321,73 @@ mod tests {
     use super::*;
 
     #[test]
-    fn octile_distance() {
+    fn octile_heuristic_distance() {
         let p0 = Point::new(0, 0);
         let p1 = Point::new(0, 1);
         let p2 = Point::new(1, 1);
         let p3 = Point::new(5, 5);
 
-        assert_eq!(Distance::octile(&p0, &p1), 1.0);
-        assert_eq!(Distance::octile(&p0, &p2), SQRT_2);
-        assert_eq!(Distance::octile(&p1, &p3), 1.0 + 4.0 * SQRT_2);
+        assert_eq!(Distance::octile_heuristic(&p0, &p1), 1.0);
+        assert_eq!(Distance::octile_heuristic(&p0, &p2), SQRT_2);
+        assert_eq!(Distance::octile_heuristic(&p1, &p3), 1.0 + 4.0 * SQRT_2);
     }
 
     #[test]
-    fn euclidean_distance() {
+    fn euclidean_heuristic_distance() {
         let p0 = Point::new(0, 0);
         let p1 = Point::new(0, 1);
         let p2 = Point::new(1, 1);
         let p3 = Point::new(5, 5);
 
-        assert_eq!(Distance::euclidean(&p0, &p1), 1.0);
-        assert_eq!(Distance::euclidean(&p0, &p2), SQRT_2);
-        assert_eq!(Distance::euclidean(&p2, &p3), 4.0 * SQRT_2);
+        assert_eq!(Distance::euclidean_heuristic(&p0, &p1), 1.0);
+        assert_eq!(Distance::euclidean_heuristic(&p0, &p2), SQRT_2);
+        assert_eq!(Distance::euclidean_heuristic(&p2, &p3), 4.0 * SQRT_2);
+    }
+
+    #[test]
+    fn neighbors() {
+        let corner = Point::new(0, 0);
+        let corner_neighbors = [None,
+                                None,
+                                None,
+                                None,
+                                Some(Point::new(0, 1)),
+                                None,
+                                Some(Point::new(1, 0)),
+                                Some(Point::new(1, 1))];
+        assert_eq!(corner.neighbors(), corner_neighbors);
+
+        let top = Point::new(0, 10);
+        let top_neighbors = [None,
+                             None,
+                             None,
+                             Some(Point::new(0, 9)),
+                             Some(Point::new(0, 11)),
+                             Some(Point::new(1, 9)),
+                             Some(Point::new(1, 10)),
+                             Some(Point::new(1, 11))];
+        assert_eq!(top.neighbors(), top_neighbors);
+
+        let left = Point::new(10, 0);
+        let left_neighbors = [None,
+                              Some(Point::new(9, 0)),
+                              Some(Point::new(9, 1)),
+                              None,
+                              Some(Point::new(10, 1)),
+                              None,
+                              Some(Point::new(11, 0)),
+                              Some(Point::new(11, 1))];
+        assert_eq!(left.neighbors(), left_neighbors);
+
+        let inner = Point::new(10, 10);
+        let inner_neighbors = [Some(Point::new(9, 9)),
+                               Some(Point::new(9, 10)),
+                               Some(Point::new(9, 11)),
+                               Some(Point::new(10, 9)),
+                               Some(Point::new(10, 11)),
+                               Some(Point::new(11, 9)),
+                               Some(Point::new(11, 10)),
+                               Some(Point::new(11, 11))];
+        assert_eq!(inner.neighbors(), inner_neighbors);
     }
 }

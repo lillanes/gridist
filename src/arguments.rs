@@ -9,8 +9,8 @@ use parser::grid_from_file;
 
 const USAGE: &'static str = "
 Usage:
-    gridist <map> <trials> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--cost=<cost>] [--verbosity=<verbosity>] [--from=<from>] [--seed=<seed>]
-    gridist <map> <starty> <startx> <endy> <endx> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--cost=<cost>] [--verbosity=<verbosity>]
+    gridist <map> <trials> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--verbosity=<verbosity>] [--from=<from>] [--seed=<seed>]
+    gridist <map> <starty> <startx> <endy> <endx> [--algorithm=<algorithm>] [--heuristic=<heuristic>] [--verbosity=<verbosity>]
     gridist --help
 
 Arguments:
@@ -23,7 +23,6 @@ Options:
     -h, --help               Show this screen.
     --algorithm=<algorithm>  The algorithm to use [default: rastar].
     --heuristic=<heuristic>  The heuristic function to use [default: octile].
-    --cost=<distance>        The cost metric to use [default: euclidean].
     --verbosity=<verbosity>  Level of verbosity [0-2] [default: 1].
     --from=<from>            Trial index at which to start running [default: 0].
     --seed=<seed>            A seed for generating random trials.
@@ -32,7 +31,7 @@ Algorithms:
     astar        Do a full A* search at every step.
     rastar       Do a full A* search and follow as long as possible.
 
-Heuristics and cost metrics:
+Heuristics:
     euclidean  The Euclidean distance metric (sqrt(dy^2+dx^2)).
     octile     The octile distance metric (max(dy,dx)-min(dy,dx)+sqrt(2)*min(dy,dx)).
 ";
@@ -44,7 +43,7 @@ enum Algorithm {
 }
 
 #[derive(Debug, Deserialize)]
-enum DistanceMetric {
+enum Heuristic {
     Euclidean,
     Octile,
 }
@@ -66,30 +65,26 @@ struct Args {
     arg_endx: usize,
     arg_endy: usize,
     flag_algorithm: Algorithm,
-    flag_heuristic: DistanceMetric,
-    flag_cost: DistanceMetric,
+    flag_heuristic: Heuristic,
     flag_verbosity: Verbosity,
     flag_from: usize,
     flag_seed: usize,
 }
 
-fn get_distance(argument: DistanceMetric) -> (fn(&Point, &Point) -> Distance) {
+fn get_heuristic(argument: Heuristic) -> (fn(&Point, &Point) -> Distance) {
     match argument {
-        DistanceMetric::Euclidean => Distance::euclidean,
-        DistanceMetric::Octile => Distance::octile,
+        Heuristic::Euclidean => Distance::euclidean_heuristic,
+        Heuristic::Octile => Distance::octile_heuristic,
     }
 }
 
 fn run_algorithm(experiment: &mut Experiment, args: Args) -> Data {
 
-    let heuristic = get_distance(args.flag_heuristic);
-    let cost = get_distance(args.flag_cost);
+    let heuristic = get_heuristic(args.flag_heuristic);
 
     match args.flag_algorithm {
-        Algorithm::Astar => experiment.run(AlwaysAstar::new(heuristic, cost)),
-        Algorithm::Rastar => {
-            experiment.run(RepeatedAstar::new(heuristic, cost))
-        }
+        Algorithm::Astar => experiment.run(AlwaysAstar::new(heuristic)),
+        Algorithm::Rastar => experiment.run(RepeatedAstar::new(heuristic)),
     }
 }
 

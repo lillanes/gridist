@@ -79,7 +79,7 @@ impl<'a, A> Instance<'a, A>
 
     fn move_agent(&mut self, point: Point) {
         self.data.steps += 1;
-        self.data.cost += self.agent.cost(&self.location, &point);
+        self.data.cost += self.grid[&point].g() - self.grid[&self.location].g();
         self.location = point;
         self.grid.look(&self.location);
     }
@@ -107,21 +107,20 @@ impl<'a, A> Instance<'a, A>
         self.location = source;
         self.grid.look(&self.location);
 
-        while let Some(datum) = self.agent.act(self.grid,
-                                               &self.location,
-                                               &target) {
+        while let Some(agent_datum) =
+            self.agent.act(self.grid, &self.location, &target) {
             if self.verbosity >= Verbosity::Two {
                 self.print(&target);
             }
 
-            if datum.expansions > 0 {
+            if agent_datum.expansions > 0 {
                 self.data.episodes += 1;
-                self.data.expansions += datum.expansions;
+                self.data.expansions += agent_datum.expansions;
             }
 
-            self.move_agent(datum.action);
+            self.move_agent(agent_datum.action);
 
-            if datum.action == target {
+            if agent_datum.action == target {
                 if self.verbosity >= Verbosity::Two {
                     self.print(&target);
                 }
@@ -206,7 +205,7 @@ map
         let start = Point::new(0, 0);
         let goal = Point::new(3, 3);
 
-        let agent = AlwaysAstar::new(Distance::octile, Distance::euclidean);
+        let agent = AlwaysAstar::new(Distance::octile_heuristic);
         let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_once(start, goal).unwrap();
@@ -230,7 +229,7 @@ map
         let start = Point::new(0, 0);
         let goal = Point::new(3, 3);
 
-        let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
+        let agent = RepeatedAstar::new(Distance::octile_heuristic);
         let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_once(start, goal).unwrap();
@@ -251,7 +250,7 @@ map
 .TT.
 ....");
 
-        let agent = RepeatedAstar::new(Distance::octile, Distance::euclidean);
+        let agent = RepeatedAstar::new(Distance::octile_heuristic);
         let mut instance = Instance::new(&mut grid, agent, Verbosity::Two);
 
         let results = instance.run_trials(98, 100, 0);

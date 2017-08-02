@@ -14,71 +14,52 @@ pub trait Agent {
            target: &Point)
            -> Option<Datum>;
 
-    fn cost(&self, source: &Point, target: &Point) -> Distance;
-
     fn reset(&mut self) {}
 }
 
 #[derive(Debug)]
-pub struct AlwaysAstar<H, C> {
+pub struct AlwaysAstar<H> {
     heuristic: H,
-    cost: C,
 }
 
-impl<H, C> AlwaysAstar<H, C> {
-    pub fn new(heuristic: H, cost: C) -> AlwaysAstar<H, C> {
-        AlwaysAstar {
-            heuristic: heuristic,
-            cost: cost,
-        }
+impl<H> AlwaysAstar<H> {
+    pub fn new(heuristic: H) -> AlwaysAstar<H> {
+        AlwaysAstar { heuristic: heuristic }
     }
 }
 
-impl<H, C> Agent for AlwaysAstar<H, C>
-    where H: Fn(&Point, &Point) -> Distance,
-          C: Fn(&Point, &Point) -> Distance
+impl<H> Agent for AlwaysAstar<H>
+    where H: Fn(&Point, &Point) -> Distance
 {
     fn act(&mut self,
            grid: &mut Grid,
            location: &Point,
            target: &Point)
            -> Option<Datum> {
-        astar(grid,
-              &location,
-              &target,
-              &self.heuristic,
-              &self.cost,
-              Tile::freespace)
-                .and_then(|mut data| {
-                    data.path.pop().map(|next| {
-                                            Datum {
-                                                action: next,
-                                                expansions: data.expansions,
-                                            }
-                                        })
+        astar(grid, &location, &target, &self.heuristic, Tile::freespace)
+            .and_then(|mut data| {
+                data.path.pop().map(|next| {
+                    Datum {
+                        action: next,
+                        expansions: data.expansions,
+                    }
                 })
-    }
-
-    fn cost(&self, source: &Point, target: &Point) -> Distance {
-        (self.cost)(source, target)
+            })
     }
 }
 
 #[derive(Debug)]
-pub struct RepeatedAstar<H, C> {
+pub struct RepeatedAstar<H> {
     heuristic: H,
-    cost: C,
     path: Option<Path>,
 }
 
-impl<H, C> RepeatedAstar<H, C>
-    where H: Fn(&Point, &Point) -> Distance,
-          C: Fn(&Point, &Point) -> Distance
+impl<H> RepeatedAstar<H>
+    where H: Fn(&Point, &Point) -> Distance
 {
-    pub fn new(heuristic: H, cost: C) -> RepeatedAstar<H, C> {
+    pub fn new(heuristic: H) -> RepeatedAstar<H> {
         RepeatedAstar {
             heuristic: heuristic,
-            cost: cost,
             path: None,
         }
     }
@@ -88,16 +69,11 @@ impl<H, C> RepeatedAstar<H, C>
                    location: &Point,
                    target: &Point)
                    -> usize {
-        astar(grid,
-              location,
-              target,
-              &self.heuristic,
-              &self.cost,
-              Tile::freespace)
-                .map_or(0, |data| {
-                    self.path = Some(data.path);
-                    data.expansions
-                })
+        astar(grid, location, target, &self.heuristic, Tile::freespace)
+            .map_or(0, |data| {
+                self.path = Some(data.path);
+                data.expansions
+            })
     }
 
     fn follow_path(&mut self) -> Option<Point> {
@@ -105,9 +81,8 @@ impl<H, C> RepeatedAstar<H, C>
     }
 }
 
-impl<H, C> Agent for RepeatedAstar<H, C>
-    where H: Fn(&Point, &Point) -> Distance,
-          C: Fn(&Point, &Point) -> Distance
+impl<H> Agent for RepeatedAstar<H>
+    where H: Fn(&Point, &Point) -> Distance
 {
     fn act(&mut self,
            grid: &mut Grid,
@@ -125,15 +100,11 @@ impl<H, C> Agent for RepeatedAstar<H, C>
 
         let expansions = self.update_path(grid, location, target);
         self.follow_path().map(|next| {
-                                   Datum {
-                                       action: next,
-                                       expansions: expansions,
-                                   }
-                               })
-    }
-
-    fn cost(&self, source: &Point, target: &Point) -> Distance {
-        (self.cost)(source, target)
+            Datum {
+                action: next,
+                expansions: expansions,
+            }
+        })
     }
 
     fn reset(&mut self) {

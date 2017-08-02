@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use grid::{Distance, Grid, Measure, Point, Tile};
+use grid::{COST, Distance, Grid, Measure, Point, Tile};
 
 #[derive(Debug)]
 struct Node {
@@ -49,9 +49,9 @@ fn extract_path(grid: &Grid, end: Point) -> Path {
 
     let mut point = end;
     loop {
-        let cell = &grid[&point];
+        let tile = &grid[&point];
 
-        if let Some(previous) = cell.parent() {
+        if let Some(previous) = tile.parent() {
             path.push(point);
             point = previous;
         } else {
@@ -67,15 +67,13 @@ pub struct Data {
     pub expansions: usize,
 }
 
-pub fn astar<H, D, P>(grid: &mut Grid,
-                      source: &Point,
-                      target: &Point,
-                      heuristic: H,
-                      cost: D,
-                      passable: P)
-                      -> Option<Data>
+pub fn astar<H, P>(grid: &mut Grid,
+                   source: &Point,
+                   target: &Point,
+                   heuristic: H,
+                   passable: P)
+                   -> Option<Data>
     where H: Fn(&Point, &Point) -> Distance,
-          D: Fn(&Point, &Point) -> Distance,
           P: Fn(&Tile) -> bool
 {
     let episode = grid.next_episode();
@@ -83,7 +81,8 @@ pub fn astar<H, D, P>(grid: &mut Grid,
     let mut open = BinaryHeap::new();
     let mut expansions = 0;
 
-    grid[source].visit_initial(Distance::octile(source, target), episode);
+    grid[source].visit_initial(Distance::octile_heuristic(source, target),
+                               episode);
     open.push(Node {
                   point: *source,
                   f: grid[source].f(),
@@ -100,16 +99,17 @@ pub fn astar<H, D, P>(grid: &mut Grid,
                         });
         } else {
             let g = grid[point].g();
-            for neighbor in point.neighbors().iter() {
-                if let Some(ref mut tile) = grid.get_mut(neighbor) {
+            for (i, neighbor) in point.neighbors().iter().enumerate() {
+                if !neighbor.is_some() {
+                    continue;
+                }
+                let neighbor = neighbor.unwrap();
+                if let Some(ref mut tile) = grid.get_mut(&neighbor) {
                     if !tile.visited(episode) && passable(tile) {
-                        let h = heuristic(neighbor, target);
-                        tile.visit(*point,
-                                   g + cost(point, neighbor),
-                                   h,
-                                   episode);
+                        let h = heuristic(&neighbor, target);
+                        tile.visit(*point, g + COST[i], h, episode);
                         open.push(Node {
-                                      point: *neighbor,
+                                      point: neighbor,
                                       f: tile.f(),
                                       g: tile.g(),
                                   });
@@ -141,8 +141,7 @@ map
         let path = astar(&mut grid,
                          &Point::new(0, 0),
                          &Point::new(0, 0),
-                         Distance::octile,
-                         Distance::euclidean,
+                         Distance::octile_heuristic,
                          Tile::passable)
                 .unwrap()
                 .path;
@@ -152,8 +151,7 @@ map
         let path = astar(&mut grid,
                          &Point::new(0, 0),
                          &Point::new(3, 3),
-                         Distance::octile,
-                         Distance::euclidean,
+                         Distance::octile_heuristic,
                          Tile::passable)
                 .unwrap()
                 .path;

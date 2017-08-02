@@ -12,12 +12,11 @@ use gridist::parser::grid_from_file;
 fn run_enigma_rastar(b: &mut Bencher) {
     let grid = grid_from_file("maps/Enigma.map");
 
-    let heuristic = Distance::octile;
-    let cost = Distance::euclidean;
+    let heuristic = Distance::octile_heuristic;
 
     let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
 
-    b.iter(|| { experiment.run(RepeatedAstar::new(heuristic, cost)) });
+    b.iter(|| { experiment.run(RepeatedAstar::new(heuristic)) });
 }
 
 fn enigma_rastar(b: &mut Bencher) {
@@ -27,13 +26,11 @@ fn enigma_rastar(b: &mut Bencher) {
 fn run_enigma_astar(b: &mut Bencher) {
     let grid = grid_from_file("maps/Enigma.map");
 
-    let heuristic = Distance::octile;
-    let cost = Distance::euclidean;
+    let heuristic = Distance::octile_heuristic;
 
     let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
 
-
-    b.iter(|| { experiment.run(AlwaysAstar::new(heuristic, cost)) });
+    b.iter(|| { experiment.run(AlwaysAstar::new(heuristic)) });
 }
 
 fn enigma_astar(b: &mut Bencher) {
