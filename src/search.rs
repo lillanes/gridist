@@ -18,7 +18,7 @@ impl Node {
 
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
-        self.f.eq(&other.f)
+        self.f.eq(&other.f) && self.g.eq(&other.g)
     }
 }
 
