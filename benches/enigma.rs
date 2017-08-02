@@ -1,17 +1,30 @@
-#![feature(test)]
-
+#[macro_use]
+extern crate bencher;
 extern crate gridist;
-extern crate test;
+
+use bencher::Bencher;
 
 use gridist::agent::{AlwaysAstar, RepeatedAstar};
 use gridist::experiment::{Experiment, Verbosity};
 use gridist::grid::{Distance, Measure};
 use gridist::parser::grid_from_file;
 
-use test::Bencher;
+fn run_enigma_rastar(b: &mut Bencher) {
+    let grid = grid_from_file("maps/Enigma.map");
 
-#[bench]
+    let heuristic = Distance::octile;
+    let cost = Distance::euclidean;
+
+    let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
+
+    b.iter(|| { experiment.run(RepeatedAstar::new(heuristic, cost)) });
+}
+
 fn enigma_rastar(b: &mut Bencher) {
+    b.bench_n(1, |b| { run_enigma_rastar(b); });
+}
+
+fn run_enigma_astar(b: &mut Bencher) {
     let grid = grid_from_file("maps/Enigma.map");
 
     let heuristic = Distance::octile;
@@ -20,18 +33,12 @@ fn enigma_rastar(b: &mut Bencher) {
     let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
 
 
-    b.iter(|| { experiment.run(RepeatedAstar::new(heuristic, cost)); })
+    b.iter(|| { experiment.run(AlwaysAstar::new(heuristic, cost)) });
 }
 
-#[bench]
 fn enigma_astar(b: &mut Bencher) {
-    let grid = grid_from_file("maps/Enigma.map");
-
-    let heuristic = Distance::octile;
-    let cost = Distance::euclidean;
-
-    let mut experiment = Experiment::trials(grid, 0, 5, 0, Verbosity::Zero);
-
-
-    b.iter(|| { experiment.run(AlwaysAstar::new(heuristic, cost)); })
+    b.bench_n(1, |b| { run_enigma_astar(b); });
 }
+
+benchmark_group!(enigma, enigma_astar, enigma_rastar);
+benchmark_main!(enigma);
