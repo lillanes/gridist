@@ -100,19 +100,17 @@ pub fn astar<H, P>(grid: &mut Grid,
         } else {
             let g = grid[point].g();
             for (i, neighbor) in point.neighbors().iter().enumerate() {
-                if !neighbor.is_some() {
-                    continue;
-                }
-                let neighbor = neighbor.unwrap();
-                if let Some(ref mut tile) = grid.get_mut(&neighbor) {
-                    if !tile.visited(episode) && passable(tile) {
-                        let h = heuristic(&neighbor, target);
-                        tile.visit(*point, g + COST[i], h, episode);
-                        open.push(Node {
-                                      point: neighbor,
-                                      f: tile.f(),
-                                      g: tile.g(),
-                                  });
+                if let Some(neighbor) = *neighbor {
+                    if let Some(ref mut tile) = grid.get_mut(&neighbor) {
+                        if !tile.visited(episode) && passable(tile) {
+                            let h = heuristic(&neighbor, target);
+                            tile.visit(*point, g + COST[i], h, episode);
+                            open.push(Node {
+                                          point: neighbor,
+                                          f: tile.f(),
+                                          g: tile.g(),
+                                      });
+                        }
                     }
                 }
             }

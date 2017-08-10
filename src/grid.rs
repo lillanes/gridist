@@ -294,13 +294,13 @@ impl<'a> Index<&'a Point> for Grid {
     type Output = Tile;
 
     fn index(&self, index: &'a Point) -> &Tile {
-        self.get(index).unwrap()
+        self.get(index).expect("Attempted to grab an out-of-bounds tile.")
     }
 }
 
 impl<'a> IndexMut<&'a Point> for Grid {
     fn index_mut(&mut self, index: &'a Point) -> &mut Tile {
-        self.get_mut(index).unwrap()
+        self.get_mut(index).expect("Attempted to grab an out-of-bounds tile.")
     }
 }
 
